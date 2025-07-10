@@ -459,5 +459,17 @@ public class PropertyConfiguration {
 	
 	@Value("${egov.integration.system.user.uuid}")
 	private String systemUser;
+	
+	//DashBoard Details
+	@Value("${dashboard.user.host}")
+	private String dashbordUserHost;
+	
+	//DashBoard Details
+	@Value("${dashboard.user.username}")
+	private String dashbordUserName;
+	
+	//DashBoard Details
+	@Value("${dashboard.user.pass}")
+	private String dashbordUserPass;
 	    
 }
