@@ -5,9 +5,10 @@ import { useForm, Controller } from "react-hook-form";
 import { useParams, useHistory } from "react-router-dom"
 import { useTranslation } from "react-i18next";
 import PTSearchAppeal from "../../components/PTSearchAppeal";
+import CryptoJS from "crypto-js";
 
 
-const UserManagement = ({path}) => {
+const UserManagement = ({codes=null}) => {
     const history = useHistory();
     const tenantId = Digit.ULBService.getCurrentTenantId();
     const employeeTypes = [
@@ -17,10 +18,13 @@ const UserManagement = ({path}) => {
         {name: "Executing Officer", code: "Executing Officer"},
     ];
     const { data: cities, isLoading } = Digit.Hooks.useTenants();
-    // console.log("cities==", cities);
+    console.log("cities==", cities);
+    const [ulbList, setUlbList] = useState(cities || []);
     const [wardList, setWardList] = useState([]);
     const { t } = useTranslation();
-    const [employeeType, setEmployeeType] = useState(null);
+    const [employeeType, setEmployeeType] = useState(codes==='EXECUTING_OFFICER' ? { name: "Executing Officer", code: "Executing Officer" } : null);
+    const [ulb, setUlb] = useState(null);
+
     const [employeeName, setEmployeeName] = useState(null);
     const [employeeEmail, setEmployeeEmail] = useState(null);
     const [employeeMobileNo, setEmployeeMobileNo] = useState(null);
@@ -31,7 +35,7 @@ const UserManagement = ({path}) => {
 
     const [resetTriggered, setResetTriggered] = useState(false);
     const [dashboardData, setDashboardData] = useState(null);
-    const [cityDisable, setCityDisable] = useState(false);
+    const [cityDisable, setCityDisable] = useState(codes==='EXECUTING_OFFICER' ? true : false);
 
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -48,8 +52,18 @@ const UserManagement = ({path}) => {
         { key: "email", label: "Email" },
         { key: "action", label: "Action" },
     ];
+    const EOColumns = [
+        { key: "slNo", label: "Sl No" },
+        { key: "employeeType", label: "Employee Type" },
+        { key: "ulb", label: "ULB" },
+        { key: "userName", label: "User Name" },
+        { key: "name", label: "Name" },
+        { key: "mobileNo", label: "Mobile No" },
+        { key: "email", label: "Email" },
+        { key: "action", label: "Action" },
+    ];
     const [userDataList, setUserDataList] = useState([]);
-    const [tableColumnList, setTableColumnList] = useState(defaultColumns);
+    const [tableColumnList, setTableColumnList] = useState(codes==='EXECUTING_OFFICER' ? EOColumns : defaultColumns);
     const [loading, setLoading] = useState(false);
 
     const [tableKey, setTableKey] = useState();
@@ -57,6 +71,21 @@ const UserManagement = ({path}) => {
     const [isShowTableName, setIsShowTableName] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const hasCalledRef = useRef(false);
+
+    const secretKey = CryptoJS.enc.Utf8.parse(process.env.REACT_APP_SECRET_KEY); // Ensure 16 bytes key
+    const generateIV = () => CryptoJS.lib.WordArray.random(16);
+    
+    const encryptPassword = (plainText) => {
+      const iv = generateIV();
+      const encrypted = CryptoJS.AES.encrypt(plainText, secretKey, {
+        mode: CryptoJS.mode.CBC, // Matches Java ECB Mode
+        padding: CryptoJS.pad.Pkcs7, // Matches Java PKCS5Padding
+        iv: iv, 
+      });
+      return iv.toString(CryptoJS.enc.Base64) + ":" + encrypted.toString();
+    
+      // return encrypted.toString(); // Returns Base64 encoded encrypted text
+    };
 
     useEffect(() => {
         if (!tenantId || hasCalledRef.current) return;
@@ -72,6 +101,7 @@ const UserManagement = ({path}) => {
             const filteredEmp = employee && employee?.user?.roles?.length > 0 ? employee?.user?.roles?.filter(item => item.code !== "EMPLOYEE") : [];
             console.log("filteredEmp==", filteredEmp);
             employee.employeeType = t(filteredEmp?.[0]?.code ? 'WF_ROLE_' + filteredEmp?.[0]?.code : 'N/A');
+            employee.ulb = t(employee?.tenantId) || "N/A";
             employee.userName = employee?.user?.userName || "N/A";
             employee.name = employee?.user?.name || "N/A";
             employee.mobileNo = employee?.user?.mobileNumber || "N/A";
@@ -89,7 +119,9 @@ const UserManagement = ({path}) => {
         // Simulate API call to fetch employee data based on filters
         // setTimeout(() => {
             // For demonstration, using static data. Replace with actual API response.
-             Digit.HRMSService.search(tenantId, null, filters).then((result) => {
+            console.log("codes==", codes);
+            if(codes && codes==="EXECUTING_OFFICER"){
+              Digit.HRMSService.search_codes(codes, null, filters).then((result) => {
                 if (result?.Employees?.length > 0) {
                     const employeeData = result.Employees;
                     formatData(employeeData);
@@ -97,6 +129,17 @@ const UserManagement = ({path}) => {
                 // setPhonecheck(true);
                 }
             });
+            } else {
+              Digit.HRMSService.search(tenantId, null, filters).then((result) => {
+                if (result?.Employees?.length > 0) {
+                    const employeeData = result.Employees;
+                    formatData(employeeData);
+                } else {
+                // setPhonecheck(true);
+                }
+            });
+            }
+            
             
         // }, 1000);
     };
@@ -117,7 +160,9 @@ const UserManagement = ({path}) => {
         if(employeeEmail) filters["email"] = employeeEmail;
         if(employeeMobileNo) filters["mobileNo"] = employeeMobileNo;
         if(userName) filters["userName"] = userName;
-        console.log("filters==", filters);
+        if(ulb) filters["ulb"] =  ulb.code;
+        // console.log("filters==", filters);
+        // console.log("userDataList==", userDataList);
         const filteredUsers =
         userDataList?.length > 0
             ? userDataList.filter((employee) => {
@@ -126,7 +171,7 @@ const UserManagement = ({path}) => {
                 if (filters.email && !employee?.email?.toLowerCase().includes(filters.email.toLowerCase())) return false;
                 if (filters.mobileNo && !String(employee?.mobileNo || "").includes(String(filters.mobileNo))) return false;
                 if (filters.userName && !employee?.userName?.toLowerCase().includes(filters.userName.toLowerCase())) return false;
-
+                if (filters.ulb && employee?.tenantId !== filters.ulb) return false;
                 return true;
             })
             : [];
@@ -141,7 +186,9 @@ const UserManagement = ({path}) => {
         setEmployeeName(null);
         setEmployeeEmail(null);
         setEmployeeMobileNo(null);
+        setUlb(null);
         setFilteredData(userDataList);
+        
 
         // setResetTriggered(true);
       };
@@ -188,7 +235,7 @@ const UserManagement = ({path}) => {
     const onSubmitNewPassword = async () => {
         console.log("New Password record==",currentPassword, newPassword, confirmNewPassword);
         if(!currentPassword || !newPassword || !confirmNewPassword){
-          alert(1)
+          // alert(1)
             setShowToast({ error: true, warning: true, label: "Please fill all the fields" });
             return;
         }
@@ -198,11 +245,11 @@ const UserManagement = ({path}) => {
         }
         console.log("selectedEmployee==", selectedEmployee);
         let emp = {
-          userName: "MMPTB",
-          tenantId: 'mn',
+          username: selectedEmployee?.userName || "MMPTB",
+          tenantId: selectedEmployee?.tenantId || 'mn',
           type: "EMPLOYEE",
-          newPassword: newPassword,
-          existingPassword: currentPassword,
+          newPassword: encryptPassword(newPassword),
+          existingPassword: encryptPassword(currentPassword),
           selfUpdate: false
         }
         try {
@@ -230,15 +277,16 @@ const UserManagement = ({path}) => {
           <form>
             <div id="form-print">
                 <div className="card" style={{maxWidth: "100%", display: "flex", justifyContent: "space-between", flexDirection: "row", alignItems: "center"}}>
-                    <div style={{ fontSize: "20px", fontWeight: "500", fontFamily: "Open Sans", display: "inline-block" }}>
+                    <div style={{ fontSize: "20px", fontWeight: "600", fontFamily: "Open Sans", display: "inline-block" }}>
                       {t("Employee Management")}
                     </div>
-                    <button className="btn btn-primary"> Add Employee </button>
+                    {/* <button className="btn btn-primary"> Add Employee </button> */}
                 </div>
               
             <div >
                 <div className="card" style={{maxWidth: "100%"}}>
                   <div className="row">
+                    {(!codes || codes !== 'EXECUTING_OFFICER') && (
                     <div className="col-sm-3" style={{ display: "inline-block" }}>
                       <CardLabel>{`${t("Employee Type")}`}</CardLabel>
                       <Dropdown
@@ -252,6 +300,22 @@ const UserManagement = ({path}) => {
                         t={t}
                       />
                     </div>
+                    )}
+                    {codes === 'EXECUTING_OFFICER' && (
+                      <div className="col-sm-3" style={{ display: "inline-block" }}>
+                        <CardLabel>{`${t("ULB")}`}</CardLabel>
+                        <Dropdown
+                        isMandatory
+                        optionCardStyles={{ zIndex: 111111 }}
+                        selected={ulb}
+                        optionKey="name"
+                        option={ulbList}
+                        select={setUlb}
+                        disable={false}
+                        t={t}
+                      />
+                      </div>
+                    )}
                     <div className="col-sm-3" style={{ display: "inline-block" }}>
                       <CardLabel>{`${t("User Name")}`}</CardLabel>
                       
@@ -362,10 +426,10 @@ const UserManagement = ({path}) => {
                     </tr>
                     </thead>
                     {filteredData && filteredData.length>0 && filteredData.map((e, indx)=>{
-                    return (<tbody key={e?.userName}><tr style={{padding: "0px 10px", borderBottom: "1px solid #bbb9b9"}} key={e?.userName}>
+                    return (<tbody key={e?.userName+indx}><tr style={{padding: "0px 10px", borderBottom: "1px solid #bbb9b9"}} key={e?.userName}>
                         <td style={{paddingLeft: "10px", maxWidth: "50px"}}>{indx + 1}</td>
                         {tableColumnList.slice(1,-1).map((clmn, index)=>{
-                        return (<td key={clmn.key} style={{paddingLeft: "10px",maxWidth: "140px"}}>{e?.[clmn.key]}</td>)
+                        return (<td key={clmn.key+indx} style={{paddingLeft: "10px",maxWidth: "140px"}}>{e?.[clmn.key]}</td>)
                         })}
                         <td key={'action'} style={{paddingLeft: "10px",maxWidth: "140px"}}><button className="btn btn-primary" style={{margin: "10px 0px"}} onClick={(el) => handleChangePassword(e, indx)}>Change Password</button></td>
                         {/* <td style={{paddingLeft: "10px",maxWidth: "140px"}}>{e?.propertyId}</td>

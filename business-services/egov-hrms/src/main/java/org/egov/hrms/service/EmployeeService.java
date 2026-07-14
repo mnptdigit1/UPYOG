@@ -49,6 +49,7 @@ import org.egov.common.contract.response.ResponseInfo;
 import org.egov.hrms.config.PropertiesManager;
 import org.egov.hrms.model.AuditDetails;
 import org.egov.hrms.model.Employee;
+import org.egov.hrms.model.Role;
 import org.egov.hrms.model.enums.UserType;
 import org.egov.hrms.producer.HRMSProducer;
 import org.egov.hrms.repository.EmployeeRepository;
@@ -137,6 +138,12 @@ public class EmployeeService {
 	 */
 	public EmployeeResponse search(EmployeeSearchCriteria criteria, RequestInfo requestInfo) {
 		boolean  userChecked = false;
+		List<String> allowedRoles = criteria.getCodes();
+		
+		if(!CollectionUtils.isEmpty(allowedRoles))
+		{
+			criteria.setCodes(new ArrayList<String>());
+		}
 		/*if(null == criteria.getIsActive() || criteria.getIsActive())
 			criteria.setIsActive(true);
 		else
@@ -205,6 +212,18 @@ public class EmployeeService {
                 employee.setUser(mapOfUsers.get(employee.getUuid()));
             }
 		}
+		
+		if(!CollectionUtils.isEmpty(allowedRoles))
+		{
+			employees=employees.stream()
+				    .filter(emp -> emp.getUser() != null)
+				    .filter(emp -> emp.getUser().getRoles() != null)
+				    .filter(emp -> emp.getUser().getRoles().stream()
+				        .anyMatch(role -> allowedRoles.contains(role.getCode()))
+				    )
+				    .collect(Collectors.toList());
+		}
+		
 		return EmployeeResponse.builder().responseInfo(factory.createResponseInfoFromRequestInfo(requestInfo, true))
 				.employees(employees).build();
 	}

@@ -29,6 +29,8 @@ const PTCard = () => {
         userRole = role.code;
       }else if(role?.code == "EXECUTING_OFFICER") {
         userRole = role.code;
+      } else if(role?.code == "SUPERUSER" || role?.code == "EMPLOYEE_ADMIN" || role?.code == "MNPTB_DIRECTOR") {
+        userRole = "MNPTB_DIRECTOR";
       }
     })
   }
@@ -78,12 +80,7 @@ const PTCard = () => {
       label: t("Search Appeal"),
       link: `/digit-ui/employee/pt/appeal-search`,
       image: "https://mnptapp-terraform.s3.ap-south-1.amazonaws.com/images/Property-Transfer.png",
-    },
-    {
-      label: t("User Management"),
-      link: `/digit-ui/employee/pt/user-management`,
-      image: "https://mnptapp-terraform.s3.ap-south-1.amazonaws.com/images/Property-Transfer.png",
-    },
+    }
     // {
     //   label: t("Grievances"),
     //   link: `/digit-ui/employee/pt/grievances`,
@@ -95,7 +92,12 @@ const PTCard = () => {
       label: t("Dashboard"),
       link: `/digit-ui/employee/pt/dashboard`,
       image: "https://mnptapp-terraform.s3.ap-south-1.amazonaws.com/images/MyApplication2.png",
-    })
+    },
+    {
+      label: t("User Management"),
+      link: `/digit-ui/employee/pt/user-management`,
+      image: "https://mnptapp-terraform.s3.ap-south-1.amazonaws.com/images/Property-Transfer.png",
+    },)
   }
   const PT_CEMP = Digit.UserService.hasAccess(["PT_CEMP"]) || false;
   const propsForModuleCard = {

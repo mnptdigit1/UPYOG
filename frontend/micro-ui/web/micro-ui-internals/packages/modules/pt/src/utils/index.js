@@ -131,6 +131,12 @@ export const setOwnerDetails = (data) => {
           documentType: owners[0]?.documents["proofIdentity"]?.documentType?.code || "",
         });
       }
+      if (owners[0]?.documents["institutionRelatedDoc"]?.fileStoreId) {
+        document.push({
+          fileStoreId: owners[0]?.documents["institutionRelatedDoc"]?.fileStoreId || "",
+          documentType: owners[0]?.documents["institutionRelatedDoc"]?.documentType || "",
+        });
+      }
       owner.push({
         altContactNumber: owners[0]?.altContactNumber,
         correspondenceAddress: owners[0]?.permanentAddress,
@@ -268,6 +274,21 @@ export const setDocumentDetails = (data) => {
           documents.push({
             fileStoreId: owner?.documents["proofIdentity"].fileStoreId || "",
             documentType: owner?.documents["proofIdentity"].documentType?.code || "",
+          });
+        }
+      }
+      if (owner.documents && owner.documents["institutionRelatedDoc"]) {
+        if (owner?.documents["institutionRelatedDoc"]?.id) {
+          documents.push({
+            fileStoreId: owner?.documents["institutionRelatedDoc"].fileStoreId || "",
+            documentType: owner?.documents["institutionRelatedDoc"].documentType || "",
+            id: owner?.documents["institutionRelatedDoc"]?.id || "",
+            status: owner?.documents["institutionRelatedDoc"]?.status || "",
+          });
+        } else {
+          documents.push({
+            fileStoreId: owner?.documents["institutionRelatedDoc"].fileStoreId || "",
+            documentType: owner?.documents["institutionRelatedDoc"].documentType || "",
           });
         }
       }
@@ -727,6 +748,19 @@ export const setUpdateOwnerDetails = (data = []) => {
         document.push({
           fileStoreId: owners[0].documents["proofIdentity"].fileStoreId || "",
           documentType: owners[0].documents["proofIdentity"].documentType?.code || "",
+        });
+      }
+      if (owners[0]?.documents["institutionRelatedDoc"]?.fileStoreId && owners[0].documents["institutionRelatedDoc"].id) {
+        document.push({
+          fileStoreId: owners[0].documents["institutionRelatedDoc"].fileStoreId || "",
+          documentType: owners[0].documents["institutionRelatedDoc"].documentType || "",
+          id: owners[0].documents["institutionRelatedDoc"].id || "",
+          status: owners[0].documents["institutionRelatedDoc"].status || "",
+        });
+      } else {
+        document.push({
+          fileStoreId: owners[0].documents["institutionRelatedDoc"].fileStoreId || "",
+          documentType: owners[0].documents["institutionRelatedDoc"].documentType || "",
         });
       }
       data.owners.forEach((owner) => {

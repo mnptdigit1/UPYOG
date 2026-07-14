@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 public class ArtifactRepository {
@@ -153,6 +154,9 @@ public class ArtifactRepository {
 	}
 
 	public List<Artifact> getByTenantIdAndFileStoreIdList(String tenantId, List<String> fileStoreIds) {
-		return fileStoreJpaRepository.findByTenantIdAndFileStoreIdList(tenantId, fileStoreIds);
+		List<Artifact> artifacts= fileStoreJpaRepository.findByTenantIdAndFileStoreIdList(tenantId, fileStoreIds);
+		if(CollectionUtils.isEmpty(artifacts) && !tenantId.equals("mn"))
+			artifacts = fileStoreJpaRepository.findByTenantIdAndFileStoreIdList("mn", fileStoreIds);
+		return artifacts;
 	}
 }
