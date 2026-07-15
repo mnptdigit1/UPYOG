@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { CardHeader, CardLabel, Dropdown, FormStep, TextInput, Toast } from "@upyog/digit-ui-react-components";
+import { CardHeader, CardLabel, Dropdown, FormStep, TextInput, Toast, UploadFile } from "@upyog/digit-ui-react-components";
 import { cardBodyStyle } from "../utils";
 import Timeline from "../components/TLTimeline";
 
@@ -15,6 +15,11 @@ const SelectInistitutionOwnerDetails = ({ t, config, onSelect, userType, formDat
   const [showToast, setShowToast] = useState(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [showToastErrorMsg, setShowToastErrorMsg] = useState(null);
+  console.log("formData in Institution details==", formData);
+  const [uploadedFile, setUploadedFile] = useState(() => formData?.owners?.[index]?.documents?.institutionRelatedDoc?.fileStoreId || null);
+  const [file, setFile] = useState(formData?.owners?.[index]?.documents?.institutionRelatedDoc);
+  const [error, setError] = useState(null);
+  
 
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const [otp, setOtp] = useState();
@@ -93,8 +98,9 @@ const SelectInistitutionOwnerDetails = ({ t, config, onSelect, userType, formDat
   };
 
   const goNext = () => {
-    let ownerDetails = formData.owners && formData.owners[index];
-    if (ownerDetails) {
+    let ownerDetails = formData.owners && formData.owners[index] || {};
+    console.log("ownerDetails==", ownerDetails, inistitutionName, inistitutetype, name, designation, mobileNumber, altContactNumber, emailId);
+    // if (ownerDetails) {
       ownerDetails["inistitutionName"] = inistitutionName;
       ownerDetails["inistitutetype"] = inistitutetype;
       ownerDetails["name"] = name;
@@ -102,12 +108,49 @@ const SelectInistitutionOwnerDetails = ({ t, config, onSelect, userType, formDat
       ownerDetails["mobileNumber"] = mobileNumber;
       ownerDetails["altContactNumber"] = altContactNumber;
       ownerDetails["emailId"] = emailId;
+      let fileStoreId = uploadedFile;
+      let fileDetails = file;
+      if (fileDetails) {
+        fileDetails.documentType = 'INSTITUTION_RELATED_DOCUMENT';
+        fileDetails.fileStoreId = fileStoreId ? fileStoreId : null;
+      }
+      if (ownerDetails && ownerDetails.documents) {
+        if (!isMutation) ownerDetails.documents["institutionRelatedDoc"] = fileDetails;
+        else ownerDetails.documents["institutionRelatedDoc"] = { documentType: 'INSTITUTION_RELATED_DOCUMENT', fileStoreId };
+      } else {
+        if (!isMutation) {
+          ownerDetails["documents"] = {};
+          ownerDetails.documents["institutionRelatedDoc"] = fileDetails;
+        } else {
+          ownerDetails["documents"] = {};
+          ownerDetails.documents["institutionRelatedDoc"] = { documentType: 'INSTITUTION_RELATED_DOCUMENT', fileStoreId };
+        }
+      }
       onSelect(config.key, isMutation ? [ownerDetails] : ownerDetails, false, index);
-    } else {
-      let ownerStep = { ...ownerDetails, inistitutionName, inistitutetype, name, designation, mobileNumber, altContactNumber, emailId };
-      if (isMutation) onSelect(config.key, [ownerStep], false, index);
-      else onSelect(config.key, ownerStep, false, index);
-    }
+    // } else {
+    //   let fileStoreId = uploadedFile;
+    //   let fileDetails = file;
+    //   if (fileDetails) {
+    //     fileDetails.documentType = 'INSTITUTION_RELATED_DOCUMENT';
+    //     fileDetails.fileStoreId = fileStoreId ? fileStoreId : null;
+    //   }
+    //   if (ownerDetails && ownerDetails.documents) {
+    //     if (!isMutation) ownerDetails.documents["institutionRelatedDoc"] = fileDetails;
+    //     else ownerDetails.documents["institutionRelatedDoc"] = { documentType: 'INSTITUTION_RELATED_DOCUMENT', fileStoreId };
+    //   } else {
+    //     if (!isMutation) {
+    //       ownerDetails["documents"] = {};
+    //       ownerDetails.documents["institutionRelatedDoc"] = fileDetails;
+    //     } else {
+    //       ownerDetails["documents"] = {};
+    //       ownerDetails.documents["institutionRelatedDoc"] = { documentType: 'INSTITUTION_RELATED_DOCUMENT', fileStoreId };
+    //     }
+    //   }
+    //   let ownerStep = { ...ownerDetails, inistitutionName, inistitutetype, name, designation, mobileNumber, altContactNumber, emailId };
+    //   console.log("ownerStep==", ownerStep);
+    //   if (isMutation) onSelect(config.key, [ownerStep], false, index);
+    //   else onSelect(config.key, ownerStep, false, index);
+    // }
   };
 
   const checkMutatePT = window.location.href.includes("citizen/pt/property/property-mutation/") ? (
@@ -204,6 +247,31 @@ const SelectInistitutionOwnerDetails = ({ t, config, onSelect, userType, formDat
     setShowToastErrorMsg(null)
   }
 
+   function selectfile(e) {
+    setFile(e.target.files[0]);
+  }
+
+  useEffect(() => {
+      (async () => {
+        setError(null);
+        if (file) {
+          if (file.size >= 2000000) {
+            setError(t("PT_MAXIMUM_UPLOAD_SIZE_EXCEEDED"));
+          } else {
+            try {
+              // TODO: change module in file storage
+              const response = await Digit.UploadServices.Filestorage("property-upload", file, Digit.ULBService.getStateId());
+              if (response?.data?.files?.length > 0) {
+                setUploadedFile(response?.data?.files[0]?.fileStoreId);
+              } else {
+                setError(t("PT_FILE_UPLOAD_ERROR"));
+              }
+            } catch (err) {}
+          }
+        }
+      })();
+    }, [file]);
+
   return (
     <React.Fragment>
       {window.location.href.includes("/citizen") ? checkMutatePT : null}
@@ -239,6 +307,21 @@ const SelectInistitutionOwnerDetails = ({ t, config, onSelect, userType, formDat
             select={setTypeOfInistituteName}
             disabled={isUpdateProperty || isEditProperty}
           />
+          <CardLabel>{`${t("PT_INSTITUTION_RELATED_DOCUMENT")}`}</CardLabel>
+          <UploadFile
+            id={"pt-doc"}
+            extraStyleName={"propertyCreate"}
+            accept=".jpg,.png,.pdf"
+            onUpload={selectfile}
+            onDelete={() => {
+              setUploadedFile(null);
+            }}
+            message={uploadedFile ? `1 ${t(`PT_ACTION_FILEUPLOADED`)}` : t(`PT_ACTION_NO_FILEUPLOADED`)}
+            error={error}
+            hasFile={uploadedFile ? true : false}
+          />
+          {error ? <div style={{ height: "20px", width: "100%", fontSize: "20px", color: "red", marginTop: "5px" }}>{error}</div> : ""}
+          <div style={{ disabled: "true", height: "20px", width: "100%" }}></div>
           <CardHeader>{t("PT_AUTH_PERSON_DETAILS")}</CardHeader>
           <CardLabel>{`${t("PT_OWNER_NAME")}*`}</CardLabel>
           <TextInput

@@ -12,6 +12,15 @@ const HrmsService = {
       userService: true,
       params: { tenantId, ...filters, ...searchParams },
     }),
+    search_codes: (codes, filters, searchParams) =>
+    Request({
+      url: Urls.hrms.search,
+      useCache: false,
+      method: "POST",
+      auth: true,
+      userService: true,
+      params: { codes, ...filters, ...searchParams },
+    }),
   create: (data, tenantId) =>
     Request({
       data: data,

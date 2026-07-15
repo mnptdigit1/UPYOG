@@ -7,6 +7,7 @@ import { LocationService } from "../../../../../libraries/src/services/elements/
 import { ServiceBasedDashboard } from "./ServiceBasedDashboard";
 import { RevenueBasedDashboard } from "./RevenueBasedDashboard";
 import { LegacyULBDetails } from "./LegacyULBDetails";
+import UserManagement from "./UserManagement";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -54,6 +55,8 @@ const EmployeeDashboard = (props) => {
   const [ward, setWard] = useState(null);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
+
+  const [mainActiveTab, setMainActiveTab] = useState("dashboard");
 
    const [activeTab, setActiveTab] = useState("service");
 
@@ -146,164 +149,199 @@ const EmployeeDashboard = (props) => {
     <div className="employee-app-container">
       <div className="dashboard-filter">
         <div className="">
-          <form>
-            <div id="form-print">
-              {<Header>{t("Dashboard")}</Header>}
-              { activeTab !== "legacyULB" && <div >
-                <div className="card" style={{maxWidth: "100%"}}>
-                  <div className="row">
-                    <div className="col-sm-3" style={{ display: "inline-block" }}>
-                      <CardLabel>{`${t("City")}`}</CardLabel>
-                      <Dropdown
-                        isMandatory
-                        optionCardStyles={{ zIndex: 111111 }}
-                        selected={city}
-                        optionKey="name"
-                        option={cities}
-                        select={setCity}
-                        disable={cityDisable}
-                        t={t}
-                      />
+          <div>
+            <div className="panel panel-default">
+              <div className="panel-heading panel-heading-nav">
+                <ul className="nav nav-tabs">
+                <li className={mainActiveTab === "dashboard" ? "active" : ""}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); setMainActiveTab("dashboard"); }}>Dashboard</a>
+                </li>
+                <li className={mainActiveTab === "usermanagement" ? "active" : ""}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); setMainActiveTab("usermanagement"); }}>User Management</a>
+                </li>
+                {/* <li className={mainActiveTab === "legacyULB" ? "active" : ""}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); setMainActiveTab("legacyULB"); }}>Legacy ULB</a>
+                </li> */}
+                </ul>
+              </div>
+              <div className="panel-body">
+                <div className="tab-content">
+                  {mainActiveTab === "dashboard" && (
+                      <div className="tab-pane active" id="dashboard">
+                        <form>
+                          <div id="form-print">
+                            {<Header>{t("Dashboard")}</Header>}
+                            { activeTab !== "legacyULB" && <div >
+                              <div className="card" style={{maxWidth: "100%"}}>
+                                <div className="row">
+                                  <div className="col-sm-3" style={{ display: "inline-block" }}>
+                                    <CardLabel>{`${t("City")}`}</CardLabel>
+                                    <Dropdown
+                                      isMandatory
+                                      optionCardStyles={{ zIndex: 111111 }}
+                                      selected={city}
+                                      optionKey="name"
+                                      option={cities}
+                                      select={setCity}
+                                      disable={cityDisable}
+                                      t={t}
+                                    />
+                                  </div>
+                                  <div className="col-sm-3" style={{ display: "inline-block" }}>
+                                    <CardLabel>{`${t("Ward")}`}</CardLabel>
+                                    <Dropdown
+                                      isMandatory
+                                      optionCardStyles={{ zIndex: 111111 }}
+                                      selected={ward}
+                                      optionKey="name"
+                                      option={wardList}
+                                      select={setWard}
+                                      t={t}
+                                    />
+                                  </div>
+                                  <div className="col-sm-3" style={{ display: "inline-block" }}>
+                                    <CardLabel>{`${t("From Date")}`}</CardLabel>
+                                    {/* <DatePicker
+                                          isRequired={true}
+                                          date={submissionDate}
+                                          onChange={(d) => {
+                                          setSubmissionDate(d);
+                                          }}
+                                      /> */}
+                                    <input
+                                      className={`employee-card-input`}
+                                      // className={`${props.disabled ? "disabled" : ""}`}
+                                      // style={{ width: "calc(100%-62px)" }}
+                                      // style={{ right: "6px", zIndex: "100", top: 6, position: "absolute", opacity: 0, width: "100%" }}
+                                      value={fromDate ? fromDate : ""}
+                                      type="date"
+                                      onChange={(d) => {
+                                        setFromDate(d.target.value);
+                                      }}
+                                      max={new Date().toISOString().split("T")[0]}
+                                      required={false}
+                                    />
+                                  </div>
+                                  <div className="col-sm-3" style={{ display: "inline-block" }}>
+                                    <CardLabel>{`${t("To Date")}`}</CardLabel>
+                                    {/* <DatePicker
+                                          isRequired={true}
+                                          date={submissionDate}
+                                          onChange={(d) => {
+                                          setSubmissionDate(d);
+                                          }}
+                                      /> */}
+                                    <input
+                                      className={`employee-card-input`}
+                                      // className={`${props.disabled ? "disabled" : ""}`}
+                                      // style={{ width: "calc(100%-62px)" }}
+                                      // style={{ right: "6px", zIndex: "100", top: 6, position: "absolute", opacity: 0, width: "100%" }}
+                                      value={toDate ? toDate : ""}
+                                      type="date"
+                                      max={new Date().toISOString().split("T")[0]}
+                                      onChange={(d) => {
+                                        setToDate(d.target.value);
+                                      }}
+                                      required={false}
+                                    />
+                                  </div>
+                                </div>
+                                <hr />
+                                <div style={{ display: "inline-flex", justifyContent: "end", marginTop: "10px" }}>
+                                  <div style={{ display: "inline" }}>
+                                    <button
+                                      onClick={onSearch}
+                                      className="submit-bar"
+                                      style={{
+                                        color: "white",
+                                        float: "right",
+                                        marginLeft: "10px",
+                                      }}
+                                    >
+                                      {t("Search")}
+                                    </button>
+                                    <button
+                                      onClick={onReset}
+                                      className="submit-bar"
+                                      style={{
+                                        color: "white",
+                                        float: "right",
+                                        marginLeft: "10px",
+                                      }}
+                                    >
+                                      {t("Reset")}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            }
+                          </div>
+
+                          {/* <div className="card">
+                                  
+                              </div> */}
+                        </form>
+                        <div className="">
+                          {dashboardData && dashboardData[0] ?  (
+                              <div>
+                                <div className="panel panel-default">
+                                  <div className="panel-heading panel-heading-nav">
+                                    <ul className="nav nav-tabs">
+                                    <li className={activeTab === "service" ? "active" : ""}>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("service"); }}>Service</a>
+                                    </li>
+                                    <li className={activeTab === "revenue" ? "active" : ""}>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("revenue"); }}>Revenue</a>
+                                    </li>
+                                    <li className={activeTab === "legacyULB" ? "active" : ""}>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("legacyULB"); }}>Legacy ULB</a>
+                                    </li>
+                                    </ul>
+                                  </div>
+                                  <div className="panel-body">
+                                    <div className="tab-content">
+                                      {activeTab === "service" && (
+                                          <div className="tab-pane active" id="service">
+                                              <ServiceBasedDashboard dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
+                                          </div>
+                                      )}
+                                      {activeTab === "revenue" && (
+                                        <div className="tab-pane active" id="revenue">
+                                          <RevenueBasedDashboard dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
+                                        </div>
+                                      )}
+                                      {activeTab === "legacyULB" && (
+                                        <div className="tab-pane active" id="legacyULB">
+                                          <LegacyULBDetails dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) :  <div>No data found</div>}
+                        </div>
+                      </div>
+                  )}
+                  {mainActiveTab === "usermanagement" && (
+                    <div className="tab-pane active" id="usermanagement">
+                      <UserManagement codes={'EXECUTING_OFFICER'} />
                     </div>
-                    <div className="col-sm-3" style={{ display: "inline-block" }}>
-                      <CardLabel>{`${t("Ward")}`}</CardLabel>
-                      <Dropdown
-                        isMandatory
-                        optionCardStyles={{ zIndex: 111111 }}
-                        selected={ward}
-                        optionKey="name"
-                        option={wardList}
-                        select={setWard}
-                        t={t}
-                      />
+                  )}
+                  {/* {mainActiveTab === "legacyULB" && (
+                    <div className="tab-pane active" id="legacyULB">
+                      <LegacyULBDetails dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
                     </div>
-                    <div className="col-sm-3" style={{ display: "inline-block" }}>
-                      <CardLabel>{`${t("From Date")}`}</CardLabel>
-                      {/* <DatePicker
-                            isRequired={true}
-                            date={submissionDate}
-                            onChange={(d) => {
-                            setSubmissionDate(d);
-                            }}
-                        /> */}
-                      <input
-                        className={`employee-card-input`}
-                        // className={`${props.disabled ? "disabled" : ""}`}
-                        // style={{ width: "calc(100%-62px)" }}
-                        // style={{ right: "6px", zIndex: "100", top: 6, position: "absolute", opacity: 0, width: "100%" }}
-                        value={fromDate ? fromDate : ""}
-                        type="date"
-                        onChange={(d) => {
-                          setFromDate(d.target.value);
-                        }}
-                        max={new Date().toISOString().split("T")[0]}
-                        required={false}
-                      />
-                    </div>
-                    <div className="col-sm-3" style={{ display: "inline-block" }}>
-                      <CardLabel>{`${t("To Date")}`}</CardLabel>
-                      {/* <DatePicker
-                            isRequired={true}
-                            date={submissionDate}
-                            onChange={(d) => {
-                            setSubmissionDate(d);
-                            }}
-                        /> */}
-                      <input
-                        className={`employee-card-input`}
-                        // className={`${props.disabled ? "disabled" : ""}`}
-                        // style={{ width: "calc(100%-62px)" }}
-                        // style={{ right: "6px", zIndex: "100", top: 6, position: "absolute", opacity: 0, width: "100%" }}
-                        value={toDate ? toDate : ""}
-                        type="date"
-                        max={new Date().toISOString().split("T")[0]}
-                        onChange={(d) => {
-                          setToDate(d.target.value);
-                        }}
-                        required={false}
-                      />
-                    </div>
-                  </div>
-                  <hr />
-                  <div style={{ display: "inline-flex", justifyContent: "end", marginTop: "10px" }}>
-                    <div style={{ display: "inline" }}>
-                      <button
-                        onClick={onSearch}
-                        className="submit-bar"
-                        style={{
-                          color: "white",
-                          float: "right",
-                          marginLeft: "10px",
-                        }}
-                      >
-                        {t("Search")}
-                      </button>
-                      <button
-                        onClick={onReset}
-                        className="submit-bar"
-                        style={{
-                          color: "white",
-                          float: "right",
-                          marginLeft: "10px",
-                        }}
-                      >
-                        {t("Reset")}
-                      </button>
-                    </div>
-                  </div>
+                  )} */}
                 </div>
               </div>
-              }
             </div>
-
-            {/* <div className="card">
-                    
-                </div> */}
-          </form>
+          </div>
+          
         </div>
       </div>
-      <div className="">
-        {dashboardData && dashboardData[0] ?  (
-            <div>
-                <div className="panel panel-default">
-            <div className="panel-heading panel-heading-nav">
-                <ul className="nav nav-tabs">
-                <li className={activeTab === "service" ? "active" : ""}>
-                    <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("service"); }}>Service</a>
-                </li>
-                <li className={activeTab === "revenue" ? "active" : ""}>
-                    <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("revenue"); }}>Revenue</a>
-                </li>
-                <li className={activeTab === "legacyULB" ? "active" : ""}>
-                    <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("legacyULB"); }}>Legacy ULB</a>
-                </li>
-                </ul>
-            </div>
-            <div className="panel-body">
-                <div className="tab-content">
-                {activeTab === "service" && (
-                    <div className="tab-pane active" id="service">
-                        <ServiceBasedDashboard dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
-                    </div>
-                )}
-                {activeTab === "revenue" && (
-                  <div className="tab-pane active" id="revenue">
-                    <RevenueBasedDashboard dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
-                  </div>
-                )}
-                {activeTab === "legacyULB" && (
-                  <div className="tab-pane active" id="legacyULB">
-                    <LegacyULBDetails dashboardData={dashboardData} filteredData={filteredData} resetTriggered={resetTriggered} />
-                  </div>
-                )}
-                </div>
-            </div>
-        </div>
-            </div>
-        ) :  <div>No data found</div>}
-        
-        
-      </div>
+      
     </div>
   );
 };
